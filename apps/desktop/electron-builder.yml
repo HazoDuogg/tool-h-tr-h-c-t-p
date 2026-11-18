@@ -1,0 +1,29 @@
+appId: com.codementor.ai.studio
+productName: CodeMentor AI Studio
+directories:
+  output: release
+files:
+  - dist/**/*
+  - package.json
+extraResources:
+  - from: ../web/.next/standalone
+    to: web-standalone
+  - from: ../web/.next/static
+    to: web-standalone/.next/static
+  - from: ../web/public
+    to: web-standalone/public
+win:
+  target:
+    - nsis
+  artifactName: "${productName}-Setup-${version}.${ext}"
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+mac:
+  target:
+    - dmg
+  category: public.app-category.developer-tools
+linux:
+  target:
+    - AppImage
+  category: Development

@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../apps/api/node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TrackStatus {
+  IN_PROGRESS
+  CAPSTONE_BLUEPRINT
+  CAPSTONE_CODING
+  LIVE_DEFENSE
+  COMPLETED
+}
+
+enum DefenseSessionStatus {
+  IN_PROGRESS
+  PASSED
+  FAILED
+}
+
+model User {
+  id             String           @id @default(uuid()) @db.Uuid
+  fullName       String
+  email          String           @unique
+  passwordHash   String
+  createdAt      DateTime         @default(now())
+  learningTracks LearningTrack[]
+  certificates   Certificate[]
+}
+
+model LearningTrack {
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String              @db.Uuid
+  language    String
+  framework   String?
+  targetFocus String
+  status      TrackStatus         @default(IN_PROGRESS)
+  createdAt   DateTime            @default(now())
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modules     CurriculumModule[]
+  capstone    CapstoneProject?
+  certificate Certificate?
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+}
+
+model CurriculumModule {
+  id              String             @id @default(uuid()) @db.Uuid
+  trackId         String             @db.Uuid
+  orderIndex      Int
+  title           String
+  coreConcepts    String[]           @default([])
+  cleanCodeRules  String[]           @default([])
+  practicePrompts String[]           @default([])
+  isUnlocked      Boolean            @default(false)
+  isPassed        Boolean            @default(false)
+  track           LearningTrack      @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  assessments     ModuleAssessment[]
+
+  @@unique([trackId, orderIndex])
+  @@index([trackId])
+}
+
+model ModuleAssessment {
+  id            String           @id @default(uuid()) @db.Uuid
+  moduleId      String           @db.Uuid
+  attemptNumber Int
+  examPayload   Json
+  userSolution  Json?
+  score         Float?
+  passed        Boolean?
+  aiFeedback    String?
+  submittedAt   DateTime?
+  createdAt     DateTime         @default(now())
+  module        CurriculumModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, attemptNumber])
+  @@index([moduleId])
+}
+
+model CapstoneProject {
+  id                String           @id @default(uuid()) @db.Uuid
+  trackId           String           @unique @db.Uuid
+  title             String
+  requirements      String
+  isUserProposed    Boolean          @default(false)
+  blueprintPayload  Json?
+  blueprintApproved Boolean          @default(false)
+  blueprintFeedback String?
+  sourceFiles       Json?
+  pasteAnomalyCount Int              @default(0)
+  logicScore        Float?
+  cleanCodeScore    Float?
+  defenseScore      Float?
+  totalScore        Float?
+  finalReview       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  track             LearningTrack    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  defenseSessions   DefenseSession[]
+}
+
+model DefenseSession {
+  id            String                @id @default(uuid()) @db.Uuid
+  capstoneId    String                @db.Uuid
+  attemptNumber Int
+  status        DefenseSessionStatus  @default(IN_PROGRESS)
+  startedAt     DateTime              @default(now())
+  expiresAt     DateTime
+  createdAt     DateTime              @default(now())
+  capstone      CapstoneProject       @relation(fields: [capstoneId], references: [id], onDelete: Cascade)
+  challenges    DefenseChallenge[]
+
+  @@unique([capstoneId, attemptNumber])
+  @@index([capstoneId, status])
+}
+
+model DefenseChallenge {
+  id               String         @id @default(uuid()) @db.Uuid
+  sessionId        String         @db.Uuid
+  challengeIndex   Int
+  instruction      String
+  targetFilePaths  String[]       @default([])
+  expectedBehavior String
+  submittedFiles   Json?
+  isPassed         Boolean        @default(false)
+  aiEvaluation     String?
+  session          DefenseSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, challengeIndex])
+  @@index([sessionId])
+}
+
+model Certificate {
+  id               String        @id @default(uuid()) @db.Uuid
+  verificationCode String        @unique
+  userId           String        @db.Uuid
+  trackId          String        @unique @db.Uuid
+  language         String
+  framework        String?
+  projectTitle     String
+  finalScore       Float
+  createdAt        DateTime      @default(now())
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track            LearningTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

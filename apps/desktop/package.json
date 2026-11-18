@@ -1,0 +1,21 @@
+{
+    "name": "@code-mentor/desktop",
+    "version": "1.0.0",
+    "description": "CodeMentor AI Studio - Desktop Learning IDE",
+    "main": "dist/main.js",
+    "scripts": {
+        "build:ts": "tsc",
+        "dev": "concurrently \"npm --prefix ../web run dev\" \"wait-on http://localhost:3000 && npm run build:ts && electron .\"",
+        "dist:win": "npm --prefix ../web run build && npm run build:ts && electron-builder --win",
+        "dist:mac": "npm --prefix ../web run build && npm run build:ts && electron-builder --mac",
+        "dist:linux": "npm --prefix ../web run build && npm run build:ts && electron-builder --linux"
+    },
+    "devDependencies": {
+        "@types/node": "^22.9.0",
+        "concurrently": "^9.0.1",
+        "electron": "^33.2.0",
+        "electron-builder": "^25.1.8",
+        "typescript": "^5.6.3",
+        "wait-on": "^8.0.1"
+    }
+}
